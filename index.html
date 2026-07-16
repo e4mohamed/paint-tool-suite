@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#3b4750">
+<meta name="theme-color" content="#00162e">
 
 <!-- iOS standalone app support -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -212,7 +212,18 @@
 
   @media (max-width: 900px) {
     .sys-top-grid { grid-template-columns: 1fr 1fr; }
-    .sys-layers-row { flex-direction: column; }
+    .sys-layers-row {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .sys-layers-row .layer-block {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin-bottom: 16px;
+    }
+    .sys-layers-row .layer-block:last-child {
+      margin-bottom: 0;
+    }
   }
 
   h2 {
@@ -370,7 +381,18 @@
     min-width: 260px;
   }
   @media (max-width: 900px) {
-    .calc-blocks-row { flex-direction: column; }
+    .calc-blocks-row {
+      flex-direction: column;
+      gap: 16px;
+    }
+    .calc-blocks-row .layer-block {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin-bottom: 16px;
+    }
+    .calc-blocks-row .layer-block:last-child {
+      margin-bottom: 0;
+    }
   }
 
   .layer-row {
@@ -533,7 +555,7 @@
             <div class="input-group">
               <label for="product">Select Product</label>
               <select id="product">
-                <option value="">No product</option>
+                <option value="">Select product</option>
               </select>
             </div>
 
