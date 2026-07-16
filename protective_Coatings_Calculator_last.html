@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Paint Tools Suite</title>
+
+<!-- PWA: manifest + icons -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#3b4750">
+
+<!-- iOS standalone app support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Paint Tools">
+
+<!-- Android/Chrome standalone app support -->
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg-1: #0e1720;
+    --bg-2: #1c2a33;
+    --card: #f0f1f2;
+    --ink: #1b232b;
+    --ink-soft: #4a5763;
+    --steel: #33566b;
+    --steel-dark: #223c4a;
+    --rust: #8f3a20;
+    --rust-dark: #5f2515;
+    --rust-tint: #f0d9d0;
+    --zinc: #1f8a86;
+    --zinc-dark: #145f5c;
+    --zinc-tint: #d9f2f0;
+    --graphite: #3b4750;
+    --graphite-dark: #262f36;
+    --graphite-tint: #e6eaec;
+    --gold: #e0a53a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Inter", "Segoe UI", sans-serif;
+    background: linear-gradient(160deg, #c7cbcf, #eceeef 70%);
+    margin: 0;
+    padding: 34px 16px 48px;
+    min-height: 100vh;
+  }
+
+  .page-title {
+    text-align: center;
+    color: var(--ink);
+    font-family: "Oswald", "Segoe UI", sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+  }
+  .page-subtitle {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    margin: 0 0 8px;
+  }
+  .page-divider {
+    width: 84px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--rust), var(--gold));
+    margin: 0 auto 30px;
+    border-radius: 3px;
+  }
+
+  /* ===== Container wrapper: stacked rows, full width on desktop ===== */
+  .container-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .second-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 22px;
+  }
+
+  .second-row .container {
+    flex: 1 1 0;
+    min-width: 320px;
+    width: auto;
+  }
+
+  .container {
+    width: 320px;
+    background: var(--card);
+    border-radius: 14px;
+    border-top: 5px solid var(--steel);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.35);
+    padding: 20px 24px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .container.accent-rust { border-top-color: var(--rust); }
+  .container.accent-zinc { border-top-color: var(--zinc); }
+  .container.accent-graphite { border-top-color: var(--graphite); }
+
+  .container.wide {
+    width: 100%;
+    max-width: 1400px;
+  }
+
+  .framed-field {
+    border: 2px solid #2ba6a4;
+    background: #e2f5f4;
+    border-radius: 10px;
+    padding: 8px 10px 10px;
+  }
+
+  .sys-top-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 320px));
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .sys-layers-row {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+  }
+  .sys-layers-row .layer-block {
+    flex: 1;
+  }
+
+  @media (max-width: 900px) {
+    .sys-top-grid { grid-template-columns: 1fr 1fr; }
+    .sys-layers-row { flex-direction: column; }
+  }
+
+  h2 {
+    text-align: center;
+    color: var(--ink);
+    font-family: "Oswald", "Segoe UI", sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  label {
+    font-weight: 600;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  input, select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border: 1.5px solid #cfd2d4;
+    border-radius: 7px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    color: var(--ink);
+    background: #ffffff;
+    transition: all 0.2s ease;
+  }
+
+  select {
+    background-color: #e9ebec;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a5763' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px rgba(143,58,32,0.22);
+  }
+
+  input[readonly] {
+    background: #e0e2e3;
+    cursor: not-allowed;
+  }
+
+  .alert {
+    background: var(--rust-tint);
+    border: 1px solid var(--rust);
+    color: var(--rust-dark);
+    border-radius: 7px;
+    padding: 5px 9px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: all 0.4s ease;
+  }
+
+  .alert.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .result {
+    text-align: center;
+    background: var(--graphite);
+    border-radius: 9px;
+    padding: 13px;
+    font-weight: 700;
+    font-family: "Oswald", "Segoe UI", sans-serif;
+    letter-spacing: 0.02em;
+    font-size: 1.5rem;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  }
+
+  /* ===== System Calculator specific ===== */
+  .layer-block {
+    border-radius: 12px;
+    padding: 0 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #fff;
+    border: 1.5px solid #dcdee0;
+    overflow: hidden;
+  }
+  .layer-block h3 {
+    margin: 0;
+    padding: 9px 12px;
+    font-family: "Oswald", "Segoe UI", sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .layer-block > select,
+  .layer-block > .layer-row,
+  .layer-block > .mini-result {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  .layer-block > select {
+    width: auto;
+  }
+  .layer-block > .form-section {
+    padding: 0 12px 10px;
+    gap: 8px;
+  }
+  .layer-block > .form-section .result {
+    font-size: 1.1rem;
+    padding: 8px;
+  }
+  .layer-primer h3 { background: var(--rust); }
+  .layer-midcoat h3 { background: var(--zinc); }
+  .layer-topcoat h3 { background: var(--graphite); }
+
+  .calc-blocks-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .calc-blocks-row .layer-block {
+    flex: 1 1 260px;
+    min-width: 260px;
+  }
+  @media (max-width: 900px) {
+    .calc-blocks-row { flex-direction: column; }
+  }
+
+  .layer-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .dft-inline-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dft-inline-group label {
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.72rem;
+  }
+  .dft-inline-group input {
+    flex: 1;
+    min-width: 0;
+  }
+  .mini-result {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: #e9ebec;
+    border-radius: 7px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .layer-primer .mini-result { background: var(--rust-tint); color: var(--rust-dark); }
+  .layer-midcoat .mini-result { background: var(--zinc-tint); color: var(--zinc-dark); }
+  .layer-topcoat .mini-result { background: var(--graphite-tint); color: var(--graphite-dark); }
+
+  .summary-result {
+    display: flex;
+    justify-content: center;
+  }
+  .summary-result .result {
+    min-width: 220px;
+    font-size: 0.95rem;
+    background: var(--steel);
+  }
+
+  /* ===== Mobile: stack vertically ===== */
+  @media (max-width: 900px) {
+    .container-wrapper {
+      align-items: center;
+    }
+    .second-row {
+      flex-direction: column;
+      align-items: center;
+    }
+    .container, .container.wide {
+      width: 100%;
+      max-width: 440px;
+    }
+    .second-row .container {
+      min-width: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Stac Coatings System Quantity Calculator</div>
+<div class="page-subtitle">Protective Coatings Calculator</div>
+<div class="page-divider"></div>
+
+<div class="container-wrapper">
+
+  <div class="container wide accent-rust" id="container4">
+    <div class="form-section">
+      <h2>Protective System Quantity Calculator</h2>
+
+      <div class="sys-top-grid">
+        <div class="input-group framed-field">
+          <label for="sysArea">Area (m²)</label>
+          <input type="number" id="sysArea" value="1000" min="0">
+        </div>
+        <div class="input-group framed-field">
+          <label for="sysLoss">Loss Factor (%)</label>
+          <input type="number" id="sysLoss" value="20" min="0" max="60">
+        </div>
+      </div>
+
+      
+
+      <div class="sys-layers-row">
+        <div class="layer-block layer-primer">
+          <h3>Primer Coat</h3>
+          <select id="sysProd0"></select>
+          
+          <div class="layer-row">
+            <div class="dft-inline-group">
+              <label for="sysDft0">DFT (μm)</label>
+              <input type="number" id="sysDft0" placeholder="Enter DFT" min="0">
+            </div>
+            <div class="mini-result" id="sysRange0"> DFTRange: -</div>
+          </div>
+          <div class="mini-result" id="sysOut0">Volume: -</div>
+        </div>
+
+        <div class="layer-block layer-midcoat">
+          <h3>Midcoat</h3>
+          <select id="sysProd1"></select>
+          <div class="layer-row">
+            <div class="dft-inline-group">
+              <label for="sysDft1">DFT (μm)</label>
+              <input type="number" id="sysDft1" placeholder="Enter DFT" min="0">
+            </div>
+            <div class="mini-result" id="sysRange1">Range: -</div>
+          </div>
+          <div class="mini-result" id="sysOut1">Volume: -</div>
+        </div>
+
+        <div class="layer-block layer-topcoat">
+          <h3>Topcoat</h3>
+          <select id="sysProd2"></select>
+          <div class="layer-row">
+            <div class="dft-inline-group">
+              <label for="sysDft2">DFT (μm)</label>
+              <input type="number" id="sysDft2" placeholder="Enter DFT" min="0">
+            </div>
+            <div class="mini-result" id="sysRange2">Range: -</div>
+          </div>
+          <div class="mini-result" id="sysOut2">Volume: -</div>
+        </div>
+
+      </div>
+	<div class="summary-result">
+        	<div class="result" id="sysTotalDFT">Total DFT: -</div>
+        </div>
+
+    </div>
+  </div>
+
+  <div class="second-row">
+
+  <div class="container accent-zinc" id="container1">
+    <div class="form-section">
+      <h2>Quick Calculators</h2>
+
+      <div class="calc-blocks-row">
+
+        <div class="layer-block layer-primer">
+          <h3>Single Product Quantity Calculator</h3>
+          <div class="form-section">
+            <div class="input-group">
+              <label for="product">Select Product</label>
+              <select id="product">
+                <option value="">Select product</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="dft">Dry Film Thickness (μm)</label>
+              <input type="number" id="dft" min="0" step="0.01" placeholder="Enter DFT value">
+              <div id="dftAlert" class="alert"></div>
+            </div>
+
+            <div class="input-group">
+              <label for="volumeSolid">Volume Solid (%)</label>
+              <input type="number" id="volumeSolid" placeholder="Auto-filled or manual entry" min="0">
+            </div>
+
+            <div class="input-group">
+              <label for="area">Area (m²)</label>
+              <input type="number" id="area" placeholder="Enter area" min="0">
+            </div>
+
+            <div class="input-group">
+              <label for="lossFactor">Loss Factor (%)</label>
+              <input type="number" id="lossFactor" placeholder="Enter loss factor" min="0">
+            </div>
+
+            <div class="result" id="result">0.00</div>
+          </div>
+        </div>
+
+        <div class="layer-block layer-midcoat">
+          <h3>WFT from DFT & VS</h3>
+          <div class="form-section">
+            <div class="input-group">
+              <label for="dft3">Dry Film Thickness (μm)</label>
+              <input type="number" id="dft3" placeholder="Enter DFT" min="0">
+            </div>
+            <div class="input-group">
+              <label for="thinner">Thinner (%)</label>
+              <input type="number" id="thinner" placeholder="Enter Thinner %" min="0">
+            </div>
+            <div class="input-group">
+              <label for="vs3">Volume Solids (%)</label>
+              <input type="number" id="vs3" placeholder="Auto-filled or manual entry" min="0">
+            </div>
+            <div class="result" id="wftResult">0.00</div>
+          </div>
+        </div>
+
+        <div class="layer-block layer-topcoat">
+          <h3>Spreading Rate from DFT & VS</h3>
+          <div class="form-section">
+            <div class="input-group">
+              <label for="dft4">Dry Film Thickness (μm)</label>
+              <input type="number" id="dft4" placeholder="Enter DFT" min="0">
+            </div>
+            <div class="input-group">
+              <label for="vs4">Volume Solids (%)</label>
+              <input type="number" id="vs4" placeholder="Auto-filled or manual entry" min="0">
+            </div>
+            <div class="result" id="SpreadResult">0.00</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  </div>
+
+</div>
+
+<script>
+/* ===== Shared Product Catalog ===== */
+const CATALOG = [{"product": "No layer / N/A", "vs": 0, "dftMin": 0, "dftMax": 0}, {"product": "StaLac Primer-200", "vs": 57.0, "dftMin": 45, "dftMax": 75}, {"product": "StaLac Matt-310", "vs": 55.0, "dftMin": 45, "dftMax": 75}, {"product": "StaLac Finish-500", "vs": 53.0, "dftMin": 40, "dftMax": 60}, {"product": "StaLac Finish-700", "vs": 50.0, "dftMin": 40, "dftMax": 60}, {"product": "Stropic Primer-500", "vs": 52.0, "dftMin": 45, "dftMax": 75}, {"product": "Stropic ZP-Primer-510", "vs": 55.0, "dftMin": 45, "dftMax": 75}, {"product": "Stropic Finish-700", "vs": 48.0, "dftMin": 40, "dftMax": 80}, {"product": "Stropic Finish-1000", "vs": 52.0, "dftMin": 40, "dftMax": 80}, {"product": "Stapoxy Protect-57143", "vs": 57.0, "dftMin": 50, "dftMax": 100}, {"product": "Stapoxy Protect ZP-58142", "vs": 58.0, "dftMin": 50, "dftMax": 120}, {"product": "Stapoxy Protect HB-75157", "vs": 75.0, "dftMin": 75, "dftMax": 200}, {"product": "Stapoxy Protect MIO-80160", "vs": 80.0, "dftMin": 75, "dftMax": 200}, {"product": "Stapoxy Shelter-33166", "vs": 63.0, "dftMin": 50, "dftMax": 70}, {"product": "Stapoxy Shelter-65211", "vs": 56.0, "dftMin": 50, "dftMax": 70}, {"product": "Stapoxy Shelter-80300", "vs": 70.0, "dftMin": 50, "dftMax": 70}, {"product": "Stapoxy Shelter-94370", "vs": 70.0, "dftMin": 50, "dftMax": 70}, {"product": "Stapoxy Mastic-75155", "vs": 75.0, "dftMin": 75, "dftMax": 200}, {"product": "Stapoxy Mastic-80148", "vs": 80.0, "dftMin": 75, "dftMax": 200}, {"product": "Stapoxy Mastic Hygiene-82137", "vs": 87.0, "dftMin": 120, "dftMax": 300}, {"product": "Stapoxy Mastic-85137", "vs": 87.0, "dftMin": 120, "dftMax": 300}, {"product": "Stapoxy Mastic GF-86138", "vs": 87.0, "dftMin": 120, "dftMax": 300}, {"product": "StaCryl PU filler-56153", "vs": 56.0, "dftMin": 60, "dftMax": 120}, {"product": "StaCryl PU HS-48115", "vs": 48.0, "dftMin": 40, "dftMax": 80}, {"product": "StaCryl PU-50115", "vs": 60.0, "dftMin": 40, "dftMax": 60}, {"product": "StaCryl PU-52140-Matt", "vs": 52.0, "dftMin": 40, "dftMax": 60}, {"product": "StaCryl PU-55123", "vs": 55.0, "dftMin": 40, "dftMax": 80}, {"product": "Staplast Finish-1000", "vs": 48.0, "dftMin": 40, "dftMax": 80}, {"product": "Stapoxy Finish-46123", "vs": 50.0, "dftMin": 40, "dftMax": 60}, {"product": "Stapoxy Finish HB-54133", "vs": 50.0, "dftMin": 50, "dftMax": 120}, {"product": "StaLine HB-78150", "vs": 78.0, "dftMin": 75, "dftMax": 150}, {"product": "StaLine SF-10136", "vs": 100.0, "dftMin": 150, "dftMax": 500}, {"product": "StaLine Hygiene-10135", "vs": 100.0, "dftMin": 150, "dftMax": 500}, {"product": "StaLine Novolac SF-10145", "vs": 100.0, "dftMin": 300, "dftMax": 600}, {"product": "StaLine Novolac HB-78154", "vs": 78.0, "dftMin": 100, "dftMax": 200}, {"product": "StaLine ChemGuard GF-10140", "vs": 100.0, "dftMin": 300, "dftMax": 600}, {"product": "StaTherm-180", "vs": 48.0, "dftMin": 25, "dftMax": 50}, {"product": "StaTherm-350", "vs": 40.0, "dftMin": 25, "dftMax": 50}, {"product": "StaTherm-650", "vs": 32.0, "dftMin": 25, "dftMax": 50}];
+const SYS_ISO = {"C1": {"L": 60, "H": 60, "VH": 60}, "C2": {"L": 100, "H": 120, "VH": 160}, "C3": {"L": 160, "H": 200, "VH": 240}, "C4": {"L": 200, "H": 240, "VH": 300}, "C5": {"L": 240, "H": 280, "VH": 320}, "Im1": {"L": 200, "H": 240, "VH": 320}, "Im2": {"L": 240, "H": 320, "VH": 380}, "Im3": {"L": 240, "H": 320, "VH": 380}, "Im4": {"L": 240, "H": 320, "VH": 380}};
+const NA = "No layer / N/A";
+
+const catByName = {};
+CATALOG.forEach(p => catByName[p.product] = p);
+
+/* ===== Coat Quantity Calculator (full catalog, no steel roughness) ===== */
+const dftInput = document.getElementById('dft');
+const areaInput = document.getElementById('area');
+const lossFactorInput = document.getElementById('lossFactor');
+const volumeSolidInput = document.getElementById('volumeSolid');
+const productSelect = document.getElementById('product');
+const resultElement = document.getElementById('result');
+const dftAlert = document.getElementById('dftAlert');
+
+CATALOG.filter(p => p.product !== NA).forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p.product;
+  opt.textContent = p.product;
+  productSelect.appendChild(opt);
+});
+
+[productSelect, dftInput, areaInput, lossFactorInput, volumeSolidInput]
+  .forEach(el => el.addEventListener('input', calculate));
+
+function calculate() {
+  const product = productSelect.value;
+  const dft = parseFloat(dftInput.value) || 0;
+  const area = parseFloat(areaInput.value) || 0;
+  const lossFactor = parseFloat(lossFactorInput.value) || 0;
+  const volumeSolid = parseFloat(volumeSolidInput.value) || 0;
+
+  if (product && catByName[product]) {
+    const { dftMin, dftMax } = catByName[product];
+    if (dft < dftMin || dft > dftMax) {
+      showAlert(`⚠️ Allowed DFT range for ${product} is ${dftMin}–${dftMax} μm.`);
+    } else hideAlert();
+  } else hideAlert();
+
+  if (volumeSolid === 0) {
+    resultElement.textContent = "Invalid Input";
+    return;
+  }
+
+  const part1 = (area * dft) / (volumeSolid * 10);
+  const totalConsumption = part1 * (1 + lossFactor / 100);
+  resultElement.textContent = totalConsumption.toFixed(2)+ " Liter";
+}
+
+function showAlert(msg) {
+  dftAlert.textContent = msg;
+  dftAlert.classList.add('show');
+}
+function hideAlert() {
+  dftAlert.classList.remove('show');
+}
+
+productSelect.addEventListener('change', () => {
+  const product = productSelect.value;
+  if (product && catByName[product]) {
+    volumeSolidInput.value = catByName[product].vs;
+    volumeSolidInput.readOnly = true;
+    dftInput.value = Math.round((catByName[product].dftMin + catByName[product].dftMax) / 2);
+    vs3.value = catByName[product].vs;
+    vs3.readOnly = true;
+    vs4.value = catByName[product].vs;
+    vs4.readOnly = true;
+  } else {
+    volumeSolidInput.value = 50;
+    volumeSolidInput.readOnly = false;
+    vs3.value = 50;
+    vs3.readOnly = false;
+    vs4.value = 50;
+    vs4.readOnly = false;
+  }
+  calculate();
+  calcWFT();
+  calcSpread();
+});
+
+/* ===== WFT from DFT & VS ===== */
+const dft3 = document.getElementById('dft3');
+const thinner = document.getElementById('thinner');
+const vs3 = document.getElementById('vs3');
+const wftResult = document.getElementById('wftResult');
+
+[dft3, thinner, vs3].forEach(el => el.addEventListener('input', calcWFT));
+
+function calcWFT() {
+  const dftVal = parseFloat(dft3.value) || 0;
+  const thinnerVal = parseFloat(thinner.value) || 0;
+  const vsVal = parseFloat(vs3.value) || 0;
+
+  if (vsVal === 0) {
+    wftResult.textContent = "Invalid Input";
+    return;
+  }
+
+  const wft = (dftVal * (100 + thinnerVal)) / vsVal;
+  wftResult.textContent = wft.toFixed(2) + " μm";
+}
+
+/* ===== Spreading Rate from DFT & VS ===== */
+const dft4 = document.getElementById('dft4');
+const vs4 = document.getElementById('vs4');
+const SpreadResult = document.getElementById('SpreadResult');
+
+[dft4, vs4].forEach(el => el.addEventListener('input', calcSpread));
+
+function calcSpread() {
+  const dftVal = parseFloat(dft4.value) || 0;
+  const vsVal = parseFloat(vs4.value) || 0;
+
+  if (dftVal <= 0 || vsVal <= 0) {
+    SpreadResult.textContent = "0.00";
+    return;
+  }
+
+  const spread = (vsVal * 10) / dftVal;
+  SpreadResult.textContent = spread.toFixed(2) + " m²/L";
+}
+
+/* ===== Protective System Calculator ===== */
+const SYS_LAYERS = [
+  { defaultProduct: 'Stapoxy Shelter-33166' },
+  { defaultProduct: 'Stapoxy Mastic-75155' },
+  { defaultProduct: 'StaCryl PU HS-48115' },
+];
+
+SYS_LAYERS.forEach((layer, idx) => {
+  const sel = document.getElementById('sysProd' + idx);
+  CATALOG.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.product;
+    opt.textContent = p.product;
+    if (p.product === layer.defaultProduct) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => onSysProductChange(idx));
+  document.getElementById('sysDft' + idx).addEventListener('input', runSysCalculator);
+});
+
+function onSysProductChange(idx) {
+  const productName = document.getElementById('sysProd' + idx).value;
+  const p = catByName[productName];
+  const dftInputEl = document.getElementById('sysDft' + idx);
+  dftInputEl.value = (p.product === NA) ? 0 : Math.round((p.dftMin + p.dftMax) / 2);
+  runSysCalculator();
+}
+
+['sysArea','sysLoss'].forEach(id => {
+  document.getElementById(id).addEventListener('input', runSysCalculator);
+  document.getElementById(id).addEventListener('change', runSysCalculator);
+});
+
+function runSysCalculator() {
+  const area = parseFloat(document.getElementById('sysArea').value) || 0;
+  const lossPct = (parseFloat(document.getElementById('sysLoss').value) || 0) / 100;
+
+  let totalDFT = 0;
+
+  SYS_LAYERS.forEach((layer, idx) => {
+    const productName = document.getElementById('sysProd' + idx).value;
+    const p = catByName[productName];
+    const dft = parseFloat(document.getElementById('sysDft' + idx).value) || 0;
+    const isNA = p.product === NA;
+
+    document.getElementById('sysRange' + idx).textContent = isNA ? 'Range: -' : `Range: ${p.dftMin}-${p.dftMax} μm`;
+
+    let vol = 0;
+    if (!isNA && p.vs > 0 && dft > 0) {
+      const tsr = (p.vs * 10 / dft) * (1 - lossPct);
+      vol = tsr > 0 ? area / tsr : 0;
+    }
+    totalDFT += dft;
+
+    document.getElementById('sysOut' + idx).textContent =
+      'Volume: ' + (vol > 0 ? vol.toFixed(1) + ' L' : '-');
+  });
+
+  document.getElementById('sysTotalDFT').textContent = 'Total DFT: ' + totalDFT + ' μm';
+}
+
+SYS_LAYERS.forEach((layer, idx) => onSysProductChange(idx));
+
+/* ===== On Load Defaults ===== */
+/* ===== Global safeguard: no field may go below zero ===== */
+document.querySelectorAll('input[type="number"]').forEach(inp => {
+  if (!inp.hasAttribute('min')) inp.setAttribute('min', '0');
+  inp.addEventListener('input', () => {
+    if (inp.value !== '' && parseFloat(inp.value) < 0) {
+      inp.value = 0;
+      inp.dispatchEvent(new Event('input'));
+    }
+  });
+});
+
+window.onload = function() {
+  productSelect.value = "";
+  volumeSolidInput.value = 50;
+  areaInput.value = "100";
+  lossFactorInput.value = "0";
+  vs3.value = 50;
+  vs4.value = 50;
+  calculate();
+  calcWFT();
+  calcSpread();
+  runSysCalculator();
+};
+
+// Register service worker for offline/installable PWA support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
