@@ -2,7 +2,7 @@
   "name": "Paint Tools Suite",
   "short_name": "Paint Tools",
   "description": "Protective coatings quantity, WFT, spreading rate and system calculators",
-  "start_url": "./protective_Coatings_Calculator_last.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
