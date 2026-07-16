@@ -76,6 +76,73 @@
     border-radius: 3px;
   }
 
+  .install-bar {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 18px;
+    position: relative;
+  }
+  .install-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--rust);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(143,58,32,0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .install-btn:hover {
+    background: var(--rust-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(143,58,32,0.4);
+  }
+  .install-btn:active {
+    transform: translateY(0);
+  }
+  .ios-install-hint {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--graphite);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    z-index: 20;
+  }
+  .ios-install-hint::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: var(--graphite);
+  }
+  .ios-install-hint.show {
+    display: block;
+  }
+  @media (max-width: 480px) {
+    .ios-install-hint {
+      white-space: normal;
+      max-width: 260px;
+      text-align: center;
+    }
+  }
+
   /* ===== Container wrapper: stacked rows, full width on desktop ===== */
   .container-wrapper {
     display: flex;
@@ -371,6 +438,17 @@
 
 <div class="page-title">Stac Coatings System Quantity Calculator</div>
 <div class="page-subtitle">Protective Coatings Calculator</div>
+
+<div class="install-bar">
+  <button type="button" id="installBtn" class="install-btn" style="display:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+    <span id="installBtnLabel">Install App</span>
+  </button>
+  <div id="iosInstallHint" class="ios-install-hint">
+    Tap <strong>Share</strong> <span aria-hidden="true">⬆️</span> then <strong>"Add to Home Screen"</strong> to install.
+  </div>
+</div>
+
 <div class="page-divider"></div>
 
 <div class="container-wrapper">
@@ -748,6 +826,76 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// ===== Install button logic =====
+(function () {
+  const installBtn = document.getElementById('installBtn');
+  const installBtnLabel = document.getElementById('installBtnLabel');
+  const iosHint = document.getElementById('iosInstallHint');
+  let deferredPrompt = null;
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  function hideInstallUI() {
+    installBtn.style.display = 'none';
+    iosHint.classList.remove('show');
+  }
+
+  // Already installed / running standalone: never show the button
+  if (isStandalone() || localStorage.getItem('pwaInstalled') === 'true') {
+    hideInstallUI();
+    return;
+  }
+
+  // Chrome/Edge/Android: native install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtnLabel.textContent = 'Install App';
+    installBtn.style.display = 'inline-flex';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    localStorage.setItem('pwaInstalled', 'true');
+    deferredPrompt = null;
+    hideInstallUI();
+  });
+
+  // iOS Safari: no beforeinstallprompt support, show a manual hint instead
+  if (isIOS() && !isStandalone()) {
+    installBtnLabel.textContent = 'Install App';
+    installBtn.style.display = 'inline-flex';
+  }
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      installBtn.style.display = 'none';
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      if (outcome !== 'accepted') {
+        // user dismissed the native prompt; allow trying again later
+        installBtn.style.display = 'inline-flex';
+      }
+    } else if (isIOS()) {
+      iosHint.classList.toggle('show');
+    }
+  });
+
+  // Dismiss iOS hint when tapping elsewhere
+  document.addEventListener('click', (e) => {
+    if (!installBtn.contains(e.target) && !iosHint.contains(e.target)) {
+      iosHint.classList.remove('show');
+    }
+  });
+})();
 </script>
 </body>
 </html>
